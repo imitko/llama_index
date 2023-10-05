@@ -46,8 +46,8 @@ class SparqlGraphStore(GraphStore):
         self.create_graph(sparql_graph)
         self.prior_subjs = []
         self.sparql_prefixes = f"""
-PREFIX er:  <http://purl.org/stuff/er#>
 BASE <{sparql_base_uri}>
+PREFIX er:  <http://purl.org/stuff/er#>
         """
 
 # From interface types.py ----------------------------------
