@@ -43,7 +43,8 @@ class SparqlGraphStore(GraphStore):
     ):
         self.sparql_endpoint = sparql_endpoint
         self.sparql_graph = sparql_graph
-        self.create_graph(sparql_graph)
+        if kwargs.get('create_graph', True):
+            self.create_graph(sparql_graph)
         self.prior_subjs = []
         self.sparql_prefixes = f"""
 BASE <{sparql_base_uri}>
