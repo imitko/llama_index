@@ -45,6 +45,9 @@ class SparqlGraphStore(GraphStore):
         self.sparql_graph = sparql_graph
         if kwargs.get('create_graph', True):
             self.create_graph(sparql_graph)
+        self.user_name = kwargs.get('user_name', None)
+        self.user_password = kwargs.get('user_password', None)
+        self.http_auth = kwargs.get('http_auth', 'DIGEST')
         self.prior_subjs = []
         self.sparql_prefixes = f"""
 BASE <{sparql_base_uri}>
@@ -151,6 +154,9 @@ PREFIX er:  <http://purl.org/stuff/er#>
         """Query the graph store with statement and parameters."""
         # logger.info('query called')
         sparql_client = SPARQLWrapper(self.sparql_endpoint)
+        if self.user_name is not None and self.user_password is not None:
+            sparql_client.setHTTPAuth (self.http_auth)
+            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
         sparql_client.setQuery(query)
         response = sparql_client.query()
         return response
@@ -168,6 +174,9 @@ PREFIX er:  <http://purl.org/stuff/er#>
     def sparql_query(self, query_string: str) -> List[Dict[str, Any]]:
         sparql_client = SPARQLWrapper(self.sparql_endpoint)
         sparql_client.setMethod(GET)
+        if self.user_name is not None and self.user_password is not None:
+            sparql_client.setHTTPAuth (self.http_auth)
+            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
         sparql_client.setQuery(query_string)
         sparql_client.setReturnFormat(JSON)
         results = []
@@ -182,6 +191,9 @@ PREFIX er:  <http://purl.org/stuff/er#>
     def sparql_update(self, query_string: str) -> None:
         sparql_client = SPARQLWrapper(self.sparql_endpoint)
         sparql_client.setMethod(POST)
+        if self.user_name is not None and self.user_password is not None:
+            sparql_client.setHTTPAuth (self.http_auth)
+            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
         sparql_client.setQuery(query_string)
         results = sparql_client.query()
         message = results.response.read().decode('utf-8')
