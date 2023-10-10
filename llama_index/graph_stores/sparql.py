@@ -48,6 +48,7 @@ class SparqlGraphStore(GraphStore):
         self.user_name = kwargs.get('user_name', None)
         self.user_password = kwargs.get('user_password', None)
         self.http_auth = kwargs.get('http_auth', 'DIGEST')
+        self.auth_token = kwargs.get('auth_token', None)
         self.prior_subjs = []
         self.sparql_prefixes = f"""
 BASE <{sparql_base_uri}>
@@ -59,7 +60,13 @@ PREFIX er:  <http://purl.org/stuff/er#>
     def client(self) -> Any:
         """Get client."""
         logger.info('sparql client(self) called')
-        return SPARQLWrapper(self.sparql_endpoint)
+        sparql_client = SPARQLWrapper(self.sparql_endpoint)
+        if self.user_name is not None and self.user_password is not None:
+            sparql_client.setHTTPAuth (self.http_auth)
+            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
+        elif self.auth_token:
+            sparql_client.addCustomHttpHeader("Authorization", "Bearer {}".format(self.auth_token))
+        return sparql_client;
     # SPARQLWrapper objects are single-use, better to return a client factory?
 
     def get(self, subj: str) -> List[List[str]]:
@@ -153,10 +160,7 @@ PREFIX er:  <http://purl.org/stuff/er#>
     def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
         """Query the graph store with statement and parameters."""
         # logger.info('query called')
-        sparql_client = SPARQLWrapper(self.sparql_endpoint)
-        if self.user_name is not None and self.user_password is not None:
-            sparql_client.setHTTPAuth (self.http_auth)
-            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
+        sparql_client = self.client()
         sparql_client.setQuery(query)
         response = sparql_client.query()
         return response
@@ -172,11 +176,8 @@ PREFIX er:  <http://purl.org/stuff/er#>
 
 # List[Dict[str, str]]?
     def sparql_query(self, query_string: str) -> List[Dict[str, Any]]:
-        sparql_client = SPARQLWrapper(self.sparql_endpoint)
+        sparql_client = self.client()
         sparql_client.setMethod(GET)
-        if self.user_name is not None and self.user_password is not None:
-            sparql_client.setHTTPAuth (self.http_auth)
-            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
         sparql_client.setQuery(query_string)
         sparql_client.setReturnFormat(JSON)
         results = []
@@ -189,11 +190,8 @@ PREFIX er:  <http://purl.org/stuff/er#>
         return results
 
     def sparql_update(self, query_string: str) -> None:
-        sparql_client = SPARQLWrapper(self.sparql_endpoint)
+        sparql_client = self.client()
         sparql_client.setMethod(POST)
-        if self.user_name is not None and self.user_password is not None:
-            sparql_client.setHTTPAuth (self.http_auth)
-            sparql_client.setCredentials(user = self.user_name, passwd = self.user_password)
         sparql_client.setQuery(query_string)
         results = sparql_client.query()
         message = results.response.read().decode('utf-8')
